@@ -16,7 +16,7 @@ class SVGCanvas:
             stroke_width (int, optional): The width of the axis lines. Defaults to 1.
         """
         self.axis_enabled = True
-        self.add_element(f'<line x1="0" y1="{self.normalized_x}" x2="{self.width}" y2="{self.normalized_y}" stroke="{color}" stroke-width="{stroke_width}" />')
+        self.add_element(f'<line x1="0" y1="{self.normalized_y}" x2="{self.width}" y2="{self.normalized_y}" stroke="{color}" stroke-width="{stroke_width}" />')
         self.add_element(f'<line x1="{self.normalized_x}" y1="0" x2="{self.normalized_x}" y2="{self.height}" stroke="{color}" stroke-width="{stroke_width}" />')
 
     def add_element(self, element: str):
@@ -40,7 +40,7 @@ class SVGCanvas:
         # 6. stroke (str, optional): The stroke color of the rectangle. Defaults
         # 7. stroke_width (int, optional): The width of the stroke. Defaults
         """
-        rect_element = f'<rect x="{x}" y="{y}" width="{width}" height="{height}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}" />'
+        rect_element = f'<rect x="{self.normalized_x + x}" y="{self.normalized_y - y}" width="{width}" height="{height}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}" />'
         self.add_element(rect_element)
     
     def circle(self, cx: float, cy: float, r: float, fill: str = "none", stroke: str = "black", stroke_width: int = 0):
@@ -55,8 +55,45 @@ class SVGCanvas:
         5. stroke (str, optional): The stroke color of the circle. Defaults to "black".
         6. stroke_width (int, optional): The width of the stroke. Defaults to 0.
         """
-        circle_element = f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}" />'
+        circle_element = f'<circle cx="{self.normalized_x + cx}" cy="{self.normalized_y - cy}" r="{r}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}" />'
         self.add_element(circle_element)
+    
+    def text(self, x: float, y: float, content: str, font_size: int = 16, fill: str = "black"):
+        """[summary]
+        Add text to the SVG canvas.
+        
+        ### Parameters
+        1. x (float): The x-coordinate of the text's position.
+        2. y (float): The y-coordinate of the text's position.
+        3. content (str): The text content to display.
+        4. font_size (int, optional): The font size of the text. Defaults to 16.
+        5. fill (str, optional): The fill color of the text. Defaults to "black".
+        """
+        text_element = f'<text x="{self.normalized_x + x}" y="{self.normalized_y - y}" font-size="{font_size}" fill="{fill}">{content}</text>'
+        self.add_element(text_element)
+
+    def plot_f(self, func, x_start: float, x_end: float, step: float = 1.0, stroke: str = "black", stroke_width: int = 1):
+        """[summary]
+        Plot a mathematical function on the SVG canvas.
+        Args:
+            func (callable): The mathematical function to plot.
+            x_start (float): The starting x-coordinate for plotting.
+            x_end (float): The ending x-coordinate for plotting.
+            step (float, optional): The step size for x-coordinates. Defaults to 1.0.
+            stroke (str, optional): The stroke color of the plot line. Defaults to "black".
+            stroke_width (int, optional): The width of the plot line. Defaults to 1.
+        """
+        points = []
+        x = x_start
+        while x <= x_end:
+            y = func(x)
+            svg_x = self.normalized_x + x
+            svg_y = self.normalized_y - y
+            points.append(f"{svg_x},{svg_y}")
+            x += step
+        points_str = " ".join(points)
+        polyline_element = f'<polyline points="{points_str}" fill="none" stroke="{stroke}" stroke-width="{stroke_width}" />'
+        self.add_element(polyline_element)
 
     def render(self) -> str:
         """[summary]
