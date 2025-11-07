@@ -1,12 +1,13 @@
 class SVGCanvas:
-    def __init__(self, width, height):
+    def __init__(self, width, height, color="white", scaling_factor=10.0):
         self.width = width
         self.height = height
         self.elements = []
-        self.axis_enabled = False
+        self.color = color
         self.normalized_x = self.width/2
         self.normalized_y = self.height/2
         self.normalized = (self.normalized_x, self.normalized_y)
+        self.scaling_factor = scaling_factor
 
     def setup_axis(self, color: str = "black", stroke_width: int = 1):
         """[summary]
@@ -15,7 +16,6 @@ class SVGCanvas:
             color (str, optional): The color of the axis lines. Defaults to "black".
             stroke_width (int, optional): The width of the axis lines. Defaults to 1.
         """
-        self.axis_enabled = True
         self.add_element(f'<line x1="0" y1="{self.normalized_y}" x2="{self.width}" y2="{self.normalized_y}" stroke="{color}" stroke-width="{stroke_width}" />')
         self.add_element(f'<line x1="{self.normalized_x}" y1="0" x2="{self.normalized_x}" y2="{self.height}" stroke="{color}" stroke-width="{stroke_width}" />')
 
@@ -40,7 +40,7 @@ class SVGCanvas:
         # 6. stroke (str, optional): The stroke color of the rectangle. Defaults
         # 7. stroke_width (int, optional): The width of the stroke. Defaults
         """
-        rect_element = f'<rect x="{self.normalized_x + x}" y="{self.normalized_y - y}" width="{width}" height="{height}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}" />'
+        rect_element = f'<rect x="{self.normalized_x + x * self.scaling_factor}" y="{self.normalized_y - y * self.scaling_factor}" width="{width}" height="{height}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}" />'
         self.add_element(rect_element)
     
     def circle(self, cx: float, cy: float, r: float, fill: str = "none", stroke: str = "black", stroke_width: int = 0):
@@ -55,7 +55,7 @@ class SVGCanvas:
         5. stroke (str, optional): The stroke color of the circle. Defaults to "black".
         6. stroke_width (int, optional): The width of the stroke. Defaults to 0.
         """
-        circle_element = f'<circle cx="{self.normalized_x + cx}" cy="{self.normalized_y - cy}" r="{r}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}" />'
+        circle_element = f'<circle cx="{self.normalized_x + cx * self.scaling_factor}" cy="{self.normalized_y - cy * self.scaling_factor}" r="{r}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}" />'
         self.add_element(circle_element)
     
     def text(self, x: float, y: float, content: str, font_size: int = 16, fill: str = "black"):
@@ -69,17 +69,17 @@ class SVGCanvas:
         4. font_size (int, optional): The font size of the text. Defaults to 16.
         5. fill (str, optional): The fill color of the text. Defaults to "black".
         """
-        text_element = f'<text x="{self.normalized_x + x}" y="{self.normalized_y - y}" font-size="{font_size}" fill="{fill}">{content}</text>'
+        text_element = f'<text x="{self.normalized_x + x * self.scaling_factor}" y="{self.normalized_y - y * self.scaling_factor}" font-size="{font_size}" fill="{fill}">{content}</text>'
         self.add_element(text_element)
 
-    def plot_f(self, func, x_start: float, x_end: float, step: float = 1.0, stroke: str = "black", stroke_width: int = 1):
+    def plot_f(self, func, x_start: float, x_end: float, step: float = 0.1, stroke: str = "black", stroke_width: int = 1):
         """[summary]
         Plot a mathematical function on the SVG canvas.
         Args:
             func (callable): The mathematical function to plot.
             x_start (float): The starting x-coordinate for plotting.
             x_end (float): The ending x-coordinate for plotting.
-            step (float, optional): The step size for x-coordinates. Defaults to 1.0.
+            step (float, optional): The step size for x-coordinates. Defaults to 0.1.
             stroke (str, optional): The stroke color of the plot line. Defaults to "black".
             stroke_width (int, optional): The width of the plot line. Defaults to 1.
         """
@@ -87,8 +87,8 @@ class SVGCanvas:
         x = x_start
         while x <= x_end:
             y = func(x)
-            svg_x = self.normalized_x + x
-            svg_y = self.normalized_y - y
+            svg_x = self.normalized_x + x * self.scaling_factor
+            svg_y = self.normalized_y - y * self.scaling_factor
             points.append(f"{svg_x},{svg_y}")
             x += step
         points_str = " ".join(points)
@@ -101,10 +101,15 @@ class SVGCanvas:
         Returns:
             str: The SVG content as a string.
         """
-        svg = f'<svg width="{self.width}" height="{self.height}" xmlns="http://www.w3.org/2000/svg" style="background: white;">'
-        svg += "\n".join(self.elements)
-        svg += '</svg>'
+            
+        svg = (
+            f'<svg width="{self.width}" height="{self.height}" xmlns="http://www.w3.org/2000/svg" '
+            f'style="background: {self.color};">\n'
+            + "\n".join(f"    {el}" for el in self.elements)
+            + "\n</svg>"
+        )
         return svg
+
 
     def save(self, filename: str):
         """[summary]
